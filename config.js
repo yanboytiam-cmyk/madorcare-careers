@@ -368,5 +368,7 @@ function roleOf(answers) {
   return ROLES.find(r => r.id === answers.role) || null;
 }
 
-/* Paste the Apps Script Web App URL here after deploying the backend. */
-const ENDPOINT = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+/* n8n workflow "MaDorCARE - candidatures": writes the row to Google Sheets,
+   files the resume in Drive, and answers with the reference number.
+   A failure there triggers "MaDorCARE - alerte erreur", which emails Yanis. */
+const ENDPOINT = 'https://n8n.srv1325858.hstgr.cloud/webhook/madorcare-candidature';

@@ -13,42 +13,40 @@ apps-script/    the Google backend
 assets/         logo and the original flyer
 ```
 
-## Connecting the inbox (once, about five minutes)
+## The backend (live, nothing to do)
 
-The form cannot send anything until this is done. Until then it shows a
-"not connected to its inbox yet" screen instead of the confirmation.
+The form posts to n8n, which files the application and answers with a reference
+number. Two workflows, both active:
 
-1. Go to <https://sheets.new> and name the spreadsheet **MaDorCARE Applications**.
-2. In that sheet: **Extensions → Apps Script**.
-3. Delete whatever is in `Code.gs` and paste the contents of
-   [`apps-script/Code.gs`](apps-script/Code.gs). Save.
-4. **Deploy → New deployment → Web app**, with:
-   - *Execute as*: **Me**
-   - *Who has access*: **Anyone**
-5. Authorise when Google asks. It will warn that the app is unverified: choose
-   **Advanced → Go to (project name)**. This is normal for your own script.
-6. Copy the **Web app URL** and paste it into the last line of `config.js`:
+| Workflow | id | What it does |
+|---|---|---|
+| `MaDorCARE - candidatures` | `CDB9KtNMFlsDqxJW` | webhook → uploads the resume to Drive → appends a row to the sheet → replies `{ok, reference}` |
+| `MaDorCARE - alerte erreur` | `zd9BDW1mFhHHoNfs` | error trigger → emails Yanis with the failing node and a link to the execution |
 
-   ```js
-   const ENDPOINT = 'https://script.google.com/macros/s/AKfy.../exec';
-   ```
+- Webhook: `https://n8n.srv1325858.hstgr.cloud/webhook/madorcare-candidature`
+- Sheet: [MaDorCARE Applications](https://docs.google.com/spreadsheets/d/1ZRScX_u594uRmiMnQ1YI7ORnvVALFmykxNvMx7BWxbc/edit), tab `Applications` (gid `751523646`)
+- Resumes: [MaDorCARE Resumes](https://drive.google.com/drive/folders/1lMy2VANgHha400yygW3RdRhO_gH6Umoj)
 
-7. Commit and push. GitHub Pages redeploys in about a minute.
+The main workflow names the error workflow in its settings, so any failure in the
+chain sends the alert. The candidate meanwhile gets the fallback screen with the
+clinic's email address, and their answers stay saved in their browser.
 
-To check it worked, open the Web app URL in a browser. It should answer
-`{"ok":true,"service":"MaDorCARE careers intake","ready":true}`.
+To rebuild or change the workflows, edit [`n8n/build_workflows.py`](n8n/build_workflows.py)
+and run it on the VPS with `N8N_BASE_URL` and `N8N_API_KEY` in the environment. It
+updates in place rather than duplicating.
 
-### Email alerts
+### Columns
 
-Optional. In `Code.gs`, set `const NOTIFY = 'someone@madorcare.com';` and
-redeploy (**Deploy → Manage deployments → edit → New version**).
+The sheet has a fixed set of columns. Role-specific answers (approaches, caseload,
+prescriptive authority, and so on) are folded into the single **Role details**
+column, so adding a question to one role never shifts the sheet's shape. Change
+that mapping in the `Preparer la candidature` node.
 
-### Where the resumes go
+### The Apps Script alternative
 
-Into a Drive folder named **MaDorCARE Resumes**, owned by whoever deployed the
-script. Each row in the sheet links to that candidate's file. If the account that
-deploys is not the account that reads the sheet, share that folder with the
-reader.
+[`apps-script/Code.gs`](apps-script/Code.gs) is a standalone Google Apps Script
+backend that does the same job without n8n. It is not in use; keep it as a
+fallback if the VPS ever goes away. Point `ENDPOINT` at its Web app URL to switch.
 
 ## Changing the questions
 
