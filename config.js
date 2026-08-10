@@ -83,7 +83,7 @@ const ROLES = [
   },
   {
     id: 'case_manager',
-    label: 'Target Case Manager',
+    label: 'Targeted Case Manager',
     blurb: 'Coordinating care, referrals, and follow-up in the community.',
     credentials: null,
     extras: [
