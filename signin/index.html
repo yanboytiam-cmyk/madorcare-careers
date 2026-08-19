@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16305C">
+<title>Patient Sign-In — MaDorCARE</title>
+<link rel="icon" type="image/png" href="assets/madorcare-logo.png">
+<style>
+  :root{
+    --navy:#16305C; --forest:#0E3F24; --green:#2C9B4B; --lime:#93D64F;
+    --teal:#3FAECB; --brick:#BE3A2B;
+    --canvas:#F3F6F4; --surface:#FFFFFF; --line:#DDE5E0; --ink:#16305C;
+    --ink-soft:#5A6B72; --radius:14px;
+    --shadow:0 1px 2px rgba(22,48,92,.06), 0 8px 24px rgba(22,48,92,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--canvas); color:var(--ink);
+    font:16px/1.55 "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased; padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:20px 16px 56px}
+
+  /* ---------- header ---------- */
+  header{text-align:center;padding:18px 0 8px}
+  header img{width:104px;height:auto;display:block;margin:0 auto 12px}
+  h1{margin:0;font-size:26px;letter-spacing:-.3px;font-weight:700;color:var(--navy)}
+  .sub{margin:8px auto 0;max-width:430px;font-size:13.5px;color:var(--ink-soft)}
+  .hipaa-badge{
+    display:inline-flex;align-items:center;gap:7px;margin-top:14px;
+    background:#EAF4EC;color:var(--forest);border:1px solid #CFE6D6;
+    padding:6px 13px;border-radius:999px;font-size:12.5px;font-weight:600;
+  }
+  .hipaa-badge svg{width:14px;height:14px;flex:none}
+
+  /* ---------- cards ---------- */
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px;margin-top:16px;box-shadow:var(--shadow);
+  }
+  .card-head{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+  .step{
+    width:27px;height:27px;border-radius:50%;flex:none;
+    background:var(--navy);color:#fff;font-size:13px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .card-head h2{margin:0;font-size:16.5px;font-weight:650;color:var(--navy)}
+
+  label.field{display:block;margin-bottom:14px}
+  label.field:last-child{margin-bottom:0}
+  .lbl{display:block;font-size:13.5px;font-weight:600;margin-bottom:6px;color:var(--navy)}
+  .opt{font-weight:400;color:var(--ink-soft)}
+  input[type=text],input[type=tel],input[type=email]{
+    width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:10px;
+    font-size:16px;font-family:inherit;color:var(--ink);background:#fff;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(63,174,203,.16)}
+  input.bad{border-color:var(--brick);background:#FDF5F4}
+
+  .visit-date{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    background:var(--canvas);border:1px dashed var(--line);border-radius:10px;
+    padding:12px 14px;font-size:14px;
+  }
+  .visit-date span:first-child{color:var(--ink-soft);font-size:13px}
+  .visit-date strong{color:var(--navy);font-weight:650;text-align:right}
+
+  /* ---------- reason ---------- */
+  .reasons{display:grid;gap:10px}
+  .reason{
+    position:relative;display:flex;align-items:center;gap:13px;cursor:pointer;
+    border:1.5px solid var(--line);border-radius:11px;padding:15px 16px;
+    background:#fff;transition:border-color .15s, background .15s;
+  }
+  .reason:hover{border-color:var(--teal)}
+  .reason input{position:absolute;opacity:0;pointer-events:none}
+  .tick{
+    width:21px;height:21px;border-radius:50%;border:2px solid var(--line);flex:none;
+    display:flex;align-items:center;justify-content:center;transition:all .15s;
+  }
+  .tick::after{content:"";width:9px;height:9px;border-radius:50%;background:#fff;transform:scale(0);transition:transform .15s}
+  .reason input:checked ~ .tick{border-color:var(--green);background:var(--green)}
+  .reason input:checked ~ .tick::after{transform:scale(1)}
+  .reason input:checked{}
+  .reason.on{border-color:var(--green);background:#F4FBF6}
+  .reason .txt{font-size:15px;font-weight:600;color:var(--navy)}
+  .reason .hint{display:block;font-size:12.5px;font-weight:400;color:var(--ink-soft);margin-top:2px}
+
+  /* ---------- capture ---------- */
+  .shot{text-align:center}
+  .shot-frame{
+    border:2px dashed var(--line);border-radius:12px;background:var(--canvas);
+    padding:26px 16px;color:var(--ink-soft);font-size:13.5px;
+  }
+  .shot-frame svg{width:38px;height:38px;opacity:.5;display:block;margin:0 auto 9px}
+  .preview{width:100%;max-width:270px;border-radius:12px;display:block;margin:0 auto;border:1px solid var(--line)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:650;
+    padding:13px 18px;cursor:pointer;transition:filter .15s, background .15s;
+  }
+  .btn:active{filter:brightness(.94)}
+  .btn-primary{background:var(--navy);color:#fff;width:100%}
+  .btn-ghost{background:#fff;color:var(--navy);border:1.5px solid var(--navy);width:100%;margin-top:11px}
+  .btn-lg{padding:17px 20px;font-size:17px;border-radius:12px}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .btn svg{width:18px;height:18px}
+
+  /* ---------- signature ---------- */
+  .sig-wrap{position:relative;border:1.5px solid var(--line);border-radius:11px;background:#fff;overflow:hidden}
+  #sigPad{display:block;width:100%;height:180px;touch-action:none;cursor:crosshair}
+  .sig-line{
+    position:absolute;left:22px;right:22px;bottom:38px;border-bottom:1.5px solid var(--line);pointer-events:none;
+  }
+  .sig-ph{
+    position:absolute;left:0;right:0;bottom:14px;text-align:center;
+    font-size:12.5px;color:var(--ink-soft);pointer-events:none;transition:opacity .2s;
+  }
+  .sig-clear{
+    position:absolute;top:9px;right:10px;background:#fff;border:1px solid var(--line);
+    border-radius:7px;font-size:12px;font-weight:600;color:var(--ink-soft);
+    padding:5px 10px;cursor:pointer;font-family:inherit;
+  }
+
+  /* ---------- consent ---------- */
+  .consent{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+  .consent input{position:absolute;opacity:0;pointer-events:none}
+  .box{
+    width:22px;height:22px;border:2px solid var(--line);border-radius:6px;flex:none;margin-top:1px;
+    display:flex;align-items:center;justify-content:center;transition:all .15s;
+  }
+  .box svg{width:13px;height:13px;stroke:#fff;stroke-width:3.4;fill:none;opacity:0;transition:opacity .15s}
+  .consent input:checked ~ .box{background:var(--green);border-color:var(--green)}
+  .consent input:checked ~ .box svg{opacity:1}
+  .consent .t{font-size:13px;line-height:1.6;color:var(--ink-soft)}
+  .consent .t b{color:var(--navy);font-weight:650}
+  .notice-link{color:var(--teal);text-decoration:underline;cursor:pointer;background:none;border:none;font:inherit;padding:0}
+
+  .err{
+    display:none;margin-top:13px;background:#FDF2F1;border:1px solid #F3CFCB;color:var(--brick);
+    border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;
+  }
+  .err.show{display:block}
+
+  footer{text-align:center;margin-top:24px;font-size:12px;color:var(--ink-soft);line-height:1.7}
+  footer a{color:var(--ink-soft)}
+
+  /* ---------- overlay ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(22,48,92,.55);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;padding:22px;z-index:60;
+  }
+  .overlay.show{display:flex}
+  .modal{
+    background:#fff;border-radius:18px;max-width:400px;width:100%;padding:32px 26px;
+    text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.28);max-height:88vh;overflow-y:auto;
+  }
+  .ring{
+    width:82px;height:82px;margin:0 auto 20px;position:relative;
+  }
+  .ring svg{transform:rotate(-90deg)}
+  .ring .count{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:25px;font-weight:700;color:var(--navy);
+  }
+  .modal h3{margin:0 0 9px;font-size:20px;color:var(--navy)}
+  .modal p{margin:0;font-size:14px;color:var(--ink-soft);line-height:1.6}
+  .checkmark{
+    width:76px;height:76px;border-radius:50%;background:#EAF7EE;margin:0 auto 20px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .checkmark svg{width:38px;height:38px;stroke:var(--green);stroke-width:3.2;fill:none}
+  .ref{
+    background:var(--canvas);border:1px dashed var(--line);border-radius:10px;
+    padding:13px;margin:18px 0 4px;
+  }
+  .ref span{display:block;font-size:11.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.7px}
+  .ref strong{display:block;font-size:19px;color:var(--navy);letter-spacing:1.4px;margin-top:3px}
+
+  /* ---------- privacy notice ---------- */
+  .notice-body{text-align:left;font-size:13px;line-height:1.65;color:var(--ink-soft)}
+  .notice-body h4{color:var(--navy);font-size:14px;margin:16px 0 5px}
+  .notice-body h4:first-child{margin-top:0}
+  .notice-body ul{margin:6px 0;padding-left:19px}
+
+  @media(max-width:420px){
+    .wrap{padding:14px 12px 44px}
+    .card{padding:17px}
+    h1{font-size:23px}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <img src="assets/madorcare-logo.png" alt="MaDorCARE — Empowering you to Thrive">
+    <h1>Patient Sign-In</h1>
+    <p class="sub">Please check in below before your appointment. It takes less than a minute.</p>
+    <div class="hipaa-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      </svg>
+      Protected in accordance with HIPAA
+    </div>
+  </header>
+
+  <form id="form" novalidate>
+
+    <!-- 1. identity -->
+    <section class="card">
+      <div class="card-head"><div class="step">1</div><h2>Your information</h2></div>
+
+      <label class="field">
+        <span class="lbl">Full name</span>
+        <input type="text" id="name" name="name" autocomplete="name" placeholder="First and last name" required>
+      </label>
+
+      <label class="field">
+        <span class="lbl">Phone number</span>
+        <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="(555) 123-4567" required>
+      </label>
+
+      <label class="field">
+        <span class="lbl">Email <span class="opt">— optional</span></span>
+        <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com">
+      </label>
+
+      <div class="visit-date">
+        <span>Date &amp; time of visit</span>
+        <strong id="stamp">—</strong>
+      </div>
+    </section>
+
+    <!-- 2. reason -->
+    <section class="card">
+      <div class="card-head"><div class="step">2</div><h2>Reason for visit</h2></div>
+      <div class="reasons" id="reasons">
+        <label class="reason">
+          <input type="radio" name="reason" value="NEW PATIENT">
+          <span class="tick"></span>
+          <span class="txt">New patient<span class="hint">This is my first visit to MaDorCARE</span></span>
+        </label>
+        <label class="reason">
+          <input type="radio" name="reason" value="FOLLOW-UP">
+          <span class="tick"></span>
+          <span class="txt">Follow-up<span class="hint">A return visit with my provider</span></span>
+        </label>
+        <label class="reason">
+          <input type="radio" name="reason" value="SESSION WITH MY CASE MANAGER">
+          <span class="tick"></span>
+          <span class="txt">Session with my case manager<span class="hint">Scheduled case management session</span></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- 3. photo -->
+    <section class="card">
+      <div class="card-head"><div class="step">3</div><h2>Photo verification</h2></div>
+      <div class="shot">
+        <div id="shotEmpty">
+          <div class="shot-frame">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            A quick photo confirms you were seen today.
+          </div>
+        </div>
+        <img id="shotPreview" class="preview" alt="Your photo" style="display:none">
+        <label for="shotInput" class="btn btn-primary" style="margin-top:13px" id="shotBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          Take photo
+        </label>
+        <button type="button" class="btn btn-ghost" id="shotRetake" style="display:none">Retake photo</button>
+        <input type="file" id="shotInput" accept="image/*" capture="user" style="display:none">
+      </div>
+    </section>
+
+    <!-- 4. signature -->
+    <section class="card">
+      <div class="card-head"><div class="step">4</div><h2>Signature</h2></div>
+      <div class="sig-wrap">
+        <canvas id="sigPad"></canvas>
+        <div class="sig-line"></div>
+        <div class="sig-ph" id="sigPh">Sign here with your finger or mouse</div>
+        <button type="button" class="sig-clear" id="sigClear">Clear</button>
+      </div>
+    </section>
+
+    <!-- 5. consent -->
+    <section class="card">
+      <div class="card-head"><div class="step">5</div><h2>Consent</h2></div>
+      <label class="consent">
+        <input type="checkbox" id="consent">
+        <span class="box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <span class="t">
+          <b>I consent</b> to the collection, use, storage, and processing of my personal and,
+          where applicable, health-related information, including any data I submit on behalf of
+          others, for the purpose of evaluating or fulfilling my request made through this form.
+          I understand this will be handled in accordance with the
+          <button type="button" class="notice-link" id="openNotice">Privacy Notice</button>
+          and the HIPAA Privacy Rule.
+        </span>
+      </label>
+      <div class="err" id="err"></div>
+      <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="margin-top:18px">
+        Complete sign-in
+      </button>
+    </section>
+
+  </form>
+
+  <footer>
+    <strong style="color:var(--navy)">MaDorCARE</strong> — Empowering you to Thrive<br>
+    10100 N Central Expressway, Suite 321, Dallas, TX 75231<br>
+    <a href="tel:12038237086">1-203-823-7086</a> &nbsp;·&nbsp;
+    <a href="mailto:info@madorcare.com">info@madorcare.com</a>
+  </footer>
+</div>
+
+<!-- processing -->
+<div class="overlay" id="ovProcess">
+  <div class="modal">
+    <div class="ring">
+      <svg width="82" height="82" viewBox="0 0 82 82">
+        <circle cx="41" cy="41" r="36" fill="none" stroke="#DDE5E0" stroke-width="6"></circle>
+        <circle id="ringArc" cx="41" cy="41" r="36" fill="none" stroke="#2C9B4B" stroke-width="6"
+                stroke-linecap="round" stroke-dasharray="226.2" stroke-dashoffset="0"></circle>
+      </svg>
+      <div class="count" id="count">5</div>
+    </div>
+    <h3>Filing your sign-in</h3>
+    <p id="processMsg">Preparing your signed document. Please keep this page open.</p>
+  </div>
+</div>
+
+<!-- done -->
+<div class="overlay" id="ovDone">
+  <div class="modal">
+    <div class="checkmark">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+    <h3>You are signed in</h3>
+    <p>Thank you. The front desk has been notified and your signed record is on file.</p>
+    <div class="ref"><span>Reference</span><strong id="refOut">—</strong></div>
+    <button type="button" class="btn btn-ghost" id="dlBtn" style="margin-top:16px">Download my copy (PDF)</button>
+    <button type="button" class="btn btn-primary" id="againBtn" style="margin-top:10px">Sign in another patient</button>
+  </div>
+</div>
+
+<!-- privacy notice -->
+<div class="overlay" id="ovNotice">
+  <div class="modal">
+    <h3 style="text-align:left;margin-bottom:14px">Privacy Notice</h3>
+    <div class="notice-body">
+      <h4>What we collect</h4>
+      <p>Your name, phone number, optional email address, the reason for your visit, the date
+      and time you signed in, a photograph taken at check-in, and your electronic signature.</p>
+
+      <h4>Why we collect it</h4>
+      <p>To confirm your attendance at MaDorCARE, to maintain an accurate record of the care
+      you received, and to meet documentation requirements for your treatment and billing.</p>
+
+      <h4>How it is protected</h4>
+      <p>This information is protected health information under the Health Insurance Portability
+      and Accountability Act (HIPAA). It is transmitted over an encrypted connection and stored
+      in access-controlled systems available only to authorised MaDorCARE staff.</p>
+
+      <h4>Who it is shared with</h4>
+      <ul>
+        <li>Your MaDorCARE care team, for treatment.</li>
+        <li>Payers and health plans, for payment of the services you receive.</li>
+        <li>Public authorities, only where required by law.</li>
+      </ul>
+      <p>It is never sold and never used for advertising.</p>
+
+      <h4>Your rights</h4>
+      <p>You may ask to see the information we hold about you, ask for a correction, or ask for
+      a copy of this record. Contact us at
+      <a href="mailto:info@madorcare.com">info@madorcare.com</a> or 1-203-823-7086.</p>
+    </div>
+    <button type="button" class="btn btn-primary" id="closeNotice" style="margin-top:18px">Close</button>
+  </div>
+</div>
+
+<script src="vendor/jspdf.umd.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ------------------------------------------------------------------
+     Endpoint. Replace only this line if the webhook ever moves.
+  ------------------------------------------------------------------ */
+  var ENDPOINT = "https://n8n.srv1325858.hstgr.cloud/webhook/madorcare-signin";
+
+  var COUNTDOWN = 5;           // seconds shown while the document is filed
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ---------------- date stamp ---------------- */
+  var visitDate = new Date();
+  function stampText(d){
+    return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"})
+         + " · " + d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+  }
+  function tickStamp(){ visitDate = new Date(); $("stamp").textContent = stampText(visitDate); }
+  tickStamp(); setInterval(tickStamp, 30000);
+
+  /* ---------------- reason ---------------- */
+  $("reasons").addEventListener("change", function(){
+    var labels = $("reasons").querySelectorAll(".reason");
+    for (var i=0;i<labels.length;i++){
+      labels[i].classList.toggle("on", labels[i].querySelector("input").checked);
+    }
+  });
+
+  /* ---------------- photo ---------------- */
+  var photoData = "";
+  $("shotInput").addEventListener("change", function(ev){
+    var file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      shrink(e.target.result, 900, 0.78, function(small){
+        photoData = small;
+        $("shotPreview").src = small;
+        $("shotPreview").style.display = "block";
+        $("shotEmpty").style.display = "none";
+        $("shotBtn").style.display = "none";
+        $("shotRetake").style.display = "inline-flex";
+        clearErr();
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+  $("shotRetake").addEventListener("click", function(){
+    photoData = "";
+    $("shotInput").value = "";
+    $("shotPreview").style.display = "none";
+    $("shotEmpty").style.display = "block";
+    $("shotBtn").style.display = "inline-flex";
+    $("shotRetake").style.display = "none";
+  });
+
+  /* Downscale so a 12 MP phone photo does not become a 6 MB payload. */
+  function shrink(dataUrl, maxSide, quality, done){
+    var img = new Image();
+    img.onload = function(){
+      var w = img.width, h = img.height, s = Math.min(1, maxSide/Math.max(w,h));
+      var c = document.createElement("canvas");
+      c.width = Math.round(w*s); c.height = Math.round(h*s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      done(c.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = function(){ done(dataUrl); };
+    img.src = dataUrl;
+  }
+
+  /* ---------------- signature ---------------- */
+  var pad = $("sigPad"), ctx = pad.getContext("2d");
+  var drawing = false, signed = false, last = null;
+
+  function sizePad(){
+    var keep = signed ? pad.toDataURL("image/png") : null;
+    var ratio = window.devicePixelRatio || 1;
+    var rect = pad.getBoundingClientRect();
+    pad.width  = Math.round(rect.width  * ratio);
+    pad.height = Math.round(rect.height * ratio);
+    ctx.setTransform(ratio,0,0,ratio,0,0);
+    ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = "#16305C";
+    if (keep){
+      var img = new Image();
+      img.onload = function(){ ctx.drawImage(img,0,0,rect.width,rect.height); };
+      img.src = keep;
+    }
+  }
+  window.addEventListener("resize", sizePad);
+  sizePad();
+
+  function point(e){
+    var r = pad.getBoundingClientRect();
+    var t = (e.touches && e.touches[0]) ? e.touches[0] : e;
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  }
+  function start(e){
+    e.preventDefault(); drawing = true; last = point(e);
+    if (!signed){ signed = true; $("sigPh").style.opacity = "0"; clearErr(); }
+  }
+  function move(e){
+    if (!drawing) return;
+    e.preventDefault();
+    var p = point(e);
+    ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+    last = p;
+  }
+  function stop(){ drawing = false; }
+
+  pad.addEventListener("mousedown", start);
+  pad.addEventListener("mousemove", move);
+  window.addEventListener("mouseup", stop);
+  pad.addEventListener("touchstart", start, {passive:false});
+  pad.addEventListener("touchmove",  move,  {passive:false});
+  pad.addEventListener("touchend",   stop);
+
+  $("sigClear").addEventListener("click", function(){
+    ctx.clearRect(0,0,pad.width,pad.height);
+    signed = false; $("sigPh").style.opacity = "1";
+  });
+
+  /* ---------------- privacy notice ---------------- */
+  $("openNotice").addEventListener("click", function(e){
+    e.preventDefault(); $("ovNotice").classList.add("show");
+  });
+  $("closeNotice").addEventListener("click", function(){ $("ovNotice").classList.remove("show"); });
+
+  /* ---------------- errors ---------------- */
+  function showErr(msg, focusId){
+    var box = $("err");
+    box.textContent = msg; box.classList.add("show");
+    if (focusId){ $(focusId).classList.add("bad"); $(focusId).focus(); }
+    box.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+  function clearErr(){
+    $("err").classList.remove("show");
+    var bad = document.querySelectorAll("input.bad");
+    for (var i=0;i<bad.length;i++) bad[i].classList.remove("bad");
+  }
+  ["name","phone","email"].forEach(function(id){
+    $(id).addEventListener("input", clearErr);
+  });
+
+  /* ---------------- reference ---------------- */
+  function reference(d){
+    var p = function(n){ return (n<10?"0":"") + n; };
+    var rand = Math.floor(Math.random()*9000 + 1000);
+    return "MDC-" + d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + "-" + rand;
+  }
+
+  /* ---------------- PDF ---------------- */
+  /* Built here rather than server-side: the patient gets an identical copy,
+     and the clinic's file is the very document that was shown on screen. */
+  function buildPdf(data){
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({unit:"pt", format:"letter"});
+    var W = doc.internal.pageSize.getWidth();
+    var M = 56, y = 52;
+
+    // logo
+    try { doc.addImage(logoData, "PNG", M, y, 62, 65); } catch(e){}
+
+    doc.setTextColor(22,48,92);
+    doc.setFont("helvetica","bold"); doc.setFontSize(21);
+    doc.text("Patient Sign-In Record", M + 78, y + 26);
+    doc.setFont("helvetica","normal"); doc.setFontSize(10.5);
+    doc.setTextColor(90,107,114);
+    doc.text("MaDorCARE - Empowering you to Thrive", M + 78, y + 44);
+    doc.text("10100 N Central Expressway, Suite 321, Dallas, TX 75231", M + 78, y + 58);
+
+    y += 88;
+    doc.setDrawColor(221,229,224); doc.setLineWidth(1);
+    doc.line(M, y, W - M, y);
+    y += 26;
+
+    function row(label, value){
+      doc.setFont("helvetica","bold"); doc.setFontSize(9.5); doc.setTextColor(90,107,114);
+      doc.text(label.toUpperCase(), M, y);
+      doc.setFont("helvetica","normal"); doc.setFontSize(13); doc.setTextColor(22,48,92);
+      doc.text(String(value || "—"), M, y + 17);
+      y += 40;
+    }
+    row("Patient name", data.name);
+    row("Phone", data.phone);
+    if (data.email) row("Email", data.email);
+    row("Reason for visit", data.reason);
+    row("Date and time of visit", data.stamp);
+    row("Reference", data.reference);
+
+    // photo + signature side by side
+    var colY = y + 4;
+    doc.setFont("helvetica","bold"); doc.setFontSize(9.5); doc.setTextColor(90,107,114);
+    doc.text("PHOTO TAKEN AT CHECK-IN", M, colY);
+    doc.text("PATIENT SIGNATURE", M + 250, colY);
+    try { if (data.photo)     doc.addImage(data.photo, "JPEG", M, colY + 10, 150, 150); } catch(e){}
+    try { if (data.signature) doc.addImage(data.signature, "PNG", M + 250, colY + 40, 210, 82); } catch(e){}
+    doc.setDrawColor(221,229,224);
+    doc.line(M + 250, colY + 130, M + 460, colY + 130);
+
+    y = colY + 178;
+    doc.setFont("helvetica","normal"); doc.setFontSize(8.4); doc.setTextColor(90,107,114);
+    var consent =
+      "The patient consented to the collection, use, storage, and processing of their personal and, where " +
+      "applicable, health-related information for the purpose of fulfilling their request made through this " +
+      "form, handled in accordance with the MaDorCARE Privacy Notice and the HIPAA Privacy Rule. " +
+      "Signed electronically on " + data.stamp + ".";
+    doc.text(doc.splitTextToSize(consent, W - M*2), M, y);
+
+    doc.setFontSize(7.8); doc.setTextColor(150,160,165);
+    doc.text("Confidential - protected health information under HIPAA.",
+             M, doc.internal.pageSize.getHeight() - 40);
+    return doc;
+  }
+
+  /* logo as data URL, so the PDF works offline too */
+  var logoData = "";
+  (function(){
+    var img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = function(){
+      var c = document.createElement("canvas");
+      c.width = img.width; c.height = img.height;
+      c.getContext("2d").drawImage(img,0,0);
+      try { logoData = c.toDataURL("image/png"); } catch(e){ logoData = ""; }
+    };
+    img.src = "assets/madorcare-logo.png";
+  })();
+
+  /* ---------------- countdown ---------------- */
+  function runCountdown(seconds, onTick){
+    var arc = $("ringArc"), total = 226.2, left = seconds;
+    $("count").textContent = left;
+    arc.style.strokeDashoffset = "0";
+    var iv = setInterval(function(){
+      left--;
+      $("count").textContent = left > 0 ? left : 0;
+      arc.style.transition = "stroke-dashoffset .9s linear";
+      arc.style.strokeDashoffset = String(total * (1 - left/seconds));
+      if (onTick) onTick(left);
+      if (left <= 0) clearInterval(iv);
+    }, 1000);
+    return function(){ clearInterval(iv); };
+  }
+
+  /* ---------------- submit ---------------- */
+  var lastDoc = null, lastRef = "";
+
+  $("form").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    clearErr();
+
+    var name  = $("name").value.trim();
+    var phone = $("phone").value.trim();
+    var email = $("email").value.trim();
+    var picked = document.querySelector('input[name="reason"]:checked');
+
+    if (name.length < 2)                       return showErr("Please enter your full name.", "name");
+    if (phone.replace(/\D/g,"").length < 7)    return showErr("Please enter a phone number we can reach you on.", "phone");
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+                                               return showErr("That email address does not look right.", "email");
+    if (!picked)                               return showErr("Please tell us the reason for your visit.");
+    if (!photoData)                            return showErr("Please take a photo to confirm your visit.");
+    if (!signed)                               return showErr("Please sign in the box above.");
+    if (!$("consent").checked)                 return showErr("Please give your consent to continue.");
+
+    var now = new Date();
+    // Local date, not UTC: after midnight the two disagree and the sheet would
+    // show yesterday's date against this morning's time.
+    var pad2 = function(n){ return (n<10?"0":"") + n; };
+    var localDate = now.getFullYear() + "-" + pad2(now.getMonth()+1) + "-" + pad2(now.getDate());
+    var localTime = pad2(now.getHours()) + ":" + pad2(now.getMinutes());
+
+    var data = {
+      name: name,
+      phone: phone,
+      email: email,
+      reason: picked.value,
+      stamp: stampText(now),
+      date: localDate,
+      time: localTime,
+      // Local and readable, to match Date and Time in the sheet rather than
+      // sitting a few hours off them in UTC.
+      submittedAt: localDate + " " + localTime + ":" + pad2(now.getSeconds()),
+      reference: reference(now),
+      photo: photoData,
+      signature: pad.toDataURL("image/png"),
+      consent: true,
+      privacyNoticeVersion: "2026-08"
+    };
+
+    $("submitBtn").disabled = true;
+    $("ovProcess").classList.add("show");
+    $("processMsg").textContent = "Preparing your signed document. Please keep this page open.";
+    runCountdown(COUNTDOWN);
+
+    // Build the PDF, then send everything in one call.
+    var doc, pdfB64 = "";
+    try {
+      doc = buildPdf(data);
+      lastDoc = doc;
+      pdfB64 = doc.output("datauristring").split(",")[1];
+    } catch(e){
+      lastDoc = null;   // the sign-in still goes through without the PDF
+    }
+    lastRef = data.reference;
+
+    var payload = {
+      name: data.name, phone: data.phone, email: data.email,
+      reason: data.reason, stamp: data.stamp, date: data.date, time: data.time,
+      submittedAt: data.submittedAt, reference: data.reference,
+      consent: true, privacyNoticeVersion: data.privacyNoticeVersion,
+      photo: data.photo, signature: data.signature,
+      pdf: pdfB64,
+      pdfName: data.reference + " - " + data.name + ".pdf"
+    };
+
+    var started = Date.now();
+    fetch(ENDPOINT, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    })
+    .then(function(res){
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.text();
+    })
+    .then(function(){
+      finish(started, true);
+    })
+    .catch(function(){
+      // Keep the record locally so the front desk can retry rather than lose it.
+      try {
+        var q = JSON.parse(localStorage.getItem("mdc_pending") || "[]");
+        q.push(payload); localStorage.setItem("mdc_pending", JSON.stringify(q));
+      } catch(e){}
+      finish(started, false);
+    });
+  });
+
+  /* Always let the countdown play out, so the screen never flickers past. */
+  function finish(started, ok){
+    var elapsed = Date.now() - started;
+    var wait = Math.max(0, COUNTDOWN*1000 - elapsed);
+    setTimeout(function(){
+      $("ovProcess").classList.remove("show");
+      $("submitBtn").disabled = false;
+      $("refOut").textContent = lastRef;
+      if (!ok){
+        $("ovDone").querySelector("h3").textContent = "Signed in, syncing shortly";
+        $("ovDone").querySelector("p").textContent =
+          "You are checked in. The connection dropped while filing, so please show this " +
+          "reference to the front desk.";
+      }
+      $("dlBtn").style.display = lastDoc ? "inline-flex" : "none";
+      $("ovDone").classList.add("show");
+    }, wait);
+  }
+
+  $("dlBtn").addEventListener("click", function(){
+    if (lastDoc) lastDoc.save(lastRef + ".pdf");
+  });
+
+  $("againBtn").addEventListener("click", function(){ location.reload(); });
+
+  /* Retry anything the network ate, next time the page is opened online. */
+  (function retryPending(){
+    var q;
+    try { q = JSON.parse(localStorage.getItem("mdc_pending") || "[]"); } catch(e){ return; }
+    if (!q.length || !navigator.onLine) return;
+    var rest = [];
+    var done = 0;
+    q.forEach(function(item){
+      fetch(ENDPOINT, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(item)})
+        .then(function(r){ if(!r.ok) rest.push(item); })
+        .catch(function(){ rest.push(item); })
+        .then(function(){
+          if (++done === q.length) localStorage.setItem("mdc_pending", JSON.stringify(rest));
+        });
+    });
+  })();
+
+})();
+</script>
+</body>
+</html>
