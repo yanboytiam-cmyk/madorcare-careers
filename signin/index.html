@@ -401,7 +401,8 @@
   ------------------------------------------------------------------ */
   var ENDPOINT = "https://n8n.srv1325858.hstgr.cloud/webhook/madorcare-signin";
 
-  var COUNTDOWN = 5;           // seconds shown while the document is filed
+  var COUNTDOWN = 60;          // seconds shown while the document is filed
+  var MIN_WAIT = 1200;         // ms, just enough that the screen cannot flicker
   var $ = function(id){ return document.getElementById(id); };
 
   /* ---------------- date stamp ---------------- */
@@ -639,7 +640,7 @@
   }
 
   /* ---------------- submit ---------------- */
-  var lastDoc = null, lastRef = "";
+  var lastDoc = null, lastRef = "", stopCountdown = null;
 
   $("form").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -687,7 +688,7 @@
     $("submitBtn").disabled = true;
     $("ovProcess").classList.add("show");
     $("processMsg").textContent = "Preparing your signed document. Please keep this page open.";
-    runCountdown(COUNTDOWN);
+    stopCountdown = runCountdown(COUNTDOWN);
 
     // Build the PDF, then send everything in one call.
     var doc, pdfB64 = "";
@@ -733,11 +734,14 @@
     });
   });
 
-  /* Always let the countdown play out, so the screen never flickers past. */
+  /* The countdown is the worst case, not a queue: as soon as the document is
+     filed the patient moves on, with just enough delay that the screen cannot
+     flicker past before they have read it. */
   function finish(started, ok){
     var elapsed = Date.now() - started;
-    var wait = Math.max(0, COUNTDOWN*1000 - elapsed);
+    var wait = Math.max(0, MIN_WAIT - elapsed);
     setTimeout(function(){
+      if (stopCountdown){ stopCountdown(); stopCountdown = null; }
       $("ovProcess").classList.remove("show");
       $("submitBtn").disabled = false;
       $("refOut").textContent = lastRef;
