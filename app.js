@@ -598,6 +598,13 @@ async function submit() {
       : null,
   };
 
+  /* A server that accepts the connection and then goes quiet used to hold an
+     applicant on the spinner for about five minutes, the browser's own limit.
+     That happened on 2026-08-28 while the server was suspended, and an
+     applicant who waits five minutes closes the tab. */
+  const ctrl = ('AbortController' in window) ? new AbortController() : null;
+  const timer = setTimeout(() => { if (ctrl) { try { ctrl.abort(); } catch (_) {} } }, 20000);
+
   try {
     // text/plain keeps this a simple request, so the browser skips the
     // CORS preflight that Apps Script cannot answer.
@@ -606,6 +613,7 @@ async function submit() {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
       redirect: 'follow',
+      signal: ctrl ? ctrl.signal : undefined,
     });
 
     const text = await res.text();
@@ -622,13 +630,23 @@ async function submit() {
   } catch (err) {
     state.sending = false;
     renderFailure(humanError(err));
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 /* Browsers say "Failed to fetch". An applicant needs to know what to do. */
 function humanError(err) {
   const raw = err && err.message ? String(err.message) : '';
+  const name = err && err.name ? String(err.name) : '';
   if (!navigator.onLine) return 'Your device is offline.';
+  /* We gave up waiting, so the fault is on our side, not the applicant's.
+     Telling them their connection dropped would send them to reset a router
+     that works fine, and their answers are kept either way. */
+  if (name === 'AbortError') {
+    return 'Our server is taking too long to answer. Your answers are saved on this device, '
+         + 'please try again in a few minutes.';
+  }
   if (/failed to fetch|networkerror|load failed/i.test(raw)) {
     return 'We could not reach the server. Your connection may have dropped.';
   }
