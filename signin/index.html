@@ -407,8 +407,10 @@
   /* How long we wait on the server before we stop waiting and keep the record
      on this machine instead. Left to itself the browser waits about five
      minutes, which is what a patient stared at on 2026-08-28 while the server
-     was down. Twenty seconds is far longer than a healthy send. */
-  var SEND_TIMEOUT = 20000;
+     was down. Sixty seconds, not twenty: measured filings take about 9 s at the median,
+     and cutting too close would abandon a filing that then succeeds on the
+     server, filing the patient twice when the queue resends it. */
+  var SEND_TIMEOUT = 60000;
   var RETRY_EVERY = 60000;     // ms between two attempts to empty the queue
   var $ = function(id){ return document.getElementById(id); };
 

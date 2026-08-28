@@ -603,7 +603,7 @@ async function submit() {
      That happened on 2026-08-28 while the server was suspended, and an
      applicant who waits five minutes closes the tab. */
   const ctrl = ('AbortController' in window) ? new AbortController() : null;
-  const timer = setTimeout(() => { if (ctrl) { try { ctrl.abort(); } catch (_) {} } }, 20000);
+  const timer = setTimeout(() => { if (ctrl) { try { ctrl.abort(); } catch (_) {} } }, 60000);
 
   try {
     // text/plain keeps this a simple request, so the browser skips the
