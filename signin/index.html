@@ -403,6 +403,13 @@
 
   var COUNTDOWN = 60;          // seconds shown while the document is filed
   var MIN_WAIT = 1200;         // ms, just enough that the screen cannot flicker
+
+  /* How long we wait on the server before we stop waiting and keep the record
+     on this machine instead. Left to itself the browser waits about five
+     minutes, which is what a patient stared at on 2026-08-28 while the server
+     was down. Twenty seconds is far longer than a healthy send. */
+  var SEND_TIMEOUT = 20000;
+  var RETRY_EVERY = 60000;     // ms between two attempts to empty the queue
   var $ = function(id){ return document.getElementById(id); };
 
   /* ---------------- date stamp ---------------- */
@@ -712,27 +719,53 @@
     };
 
     var started = Date.now();
-    fetch(ENDPOINT, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    })
-    .then(function(res){
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      return res.text();
-    })
-    .then(function(){
-      finish(started, true);
-    })
-    .catch(function(){
-      // Keep the record locally so the front desk can retry rather than lose it.
-      try {
-        var q = JSON.parse(localStorage.getItem("mdc_pending") || "[]");
-        q.push(payload); localStorage.setItem("mdc_pending", JSON.stringify(q));
-      } catch(e){}
-      finish(started, false);
+    sendVisit(payload).then(function(ok){
+      if (!ok){
+        // Keep the record locally so the front desk can retry rather than lose it.
+        try {
+          var q = JSON.parse(localStorage.getItem("mdc_pending") || "[]");
+          q.push(payload); localStorage.setItem("mdc_pending", JSON.stringify(q));
+        } catch(e){}
+      }
+      finish(started, ok);
     });
   });
+
+  /* ==================================================================
+     ONE WAY OUT, WITH A DEADLINE
+     Every send goes through here, so a server that accepts the connection
+     and then never answers cannot hold the front desk hostage. Resolves
+     true when the record is filed, false when it is not, never throws.
+  ================================================================== */
+  function sendVisit(payload){
+    return new Promise(function(resolve){
+      var done = false;
+      var ctrl = ("AbortController" in window) ? new AbortController() : null;
+      var timer = setTimeout(function(){
+        if (done) return;
+        done = true;
+        if (ctrl) { try { ctrl.abort(); } catch(e){} }
+        resolve(false);
+      }, SEND_TIMEOUT);
+      var opts = {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      };
+      if (ctrl) opts.signal = ctrl.signal;
+      fetch(ENDPOINT, opts)
+        .then(function(res){
+          if (done) return;
+          done = true; clearTimeout(timer);
+          resolve(!!res.ok);
+        })
+        .catch(function(){
+          if (done) return;
+          done = true; clearTimeout(timer);
+          resolve(false);
+        });
+    });
+  }
 
   /* The countdown is the worst case, not a queue: as soon as the document is
      filed the patient moves on, with just enough delay that the screen cannot
@@ -746,10 +779,14 @@
       $("submitBtn").disabled = false;
       $("refOut").textContent = lastRef;
       if (!ok){
+        /* It used to say the connection dropped. On 2026-08-28 the connection
+           was fine and the server was down, so that sentence was simply not
+           true. The patient does not need to know which side failed, only
+           that they are checked in and what to do next. */
         $("ovDone").querySelector("h3").textContent = "Signed in, syncing shortly";
         $("ovDone").querySelector("p").textContent =
-          "You are checked in. The connection dropped while filing, so please show this " +
-          "reference to the front desk.";
+          "You are checked in and your details are saved. Filing did not complete just now, " +
+          "so please show this reference to the front desk.";
       }
       $("dlBtn").style.display = lastDoc ? "inline-flex" : "none";
       $("ovDone").classList.add("show");
@@ -762,22 +799,35 @@
 
   $("againBtn").addEventListener("click", function(){ location.reload(); });
 
-  /* Retry anything the network ate, next time the page is opened online. */
-  (function retryPending(){
+  /* Retry anything the network ate. This used to run once, at page load. A
+     front desk leaves this page open all day, so "once at load" meant a
+     record could sit in the queue until somebody thought to reload. On
+     2026-08-28 the server was down for three hours and nobody reloaded. */
+  var retrying = false;
+  function retryPending(){
     var q;
     try { q = JSON.parse(localStorage.getItem("mdc_pending") || "[]"); } catch(e){ return; }
-    if (!q.length || !navigator.onLine) return;
+    if (!q.length || retrying || !navigator.onLine) return;
+    retrying = true;
     var rest = [];
-    var done = 0;
-    q.forEach(function(item){
-      fetch(ENDPOINT, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(item)})
-        .then(function(r){ if(!r.ok) rest.push(item); })
-        .catch(function(){ rest.push(item); })
-        .then(function(){
-          if (++done === q.length) localStorage.setItem("mdc_pending", JSON.stringify(rest));
-        });
-    });
-  })();
+    /* One at a time: each record carries a PDF, and firing them all at once
+       on a thin connection is how you lose all of them. */
+    (function next(i){
+      if (i >= q.length){
+        retrying = false;
+        try { localStorage.setItem("mdc_pending", JSON.stringify(rest)); } catch(e){}
+        return;
+      }
+      sendVisit(q[i]).then(function(ok){
+        if (!ok) rest.push(q[i]);
+        next(i + 1);
+      });
+    })(0);
+  }
+  retryPending();
+  setInterval(retryPending, RETRY_EVERY);
+  window.addEventListener("online", retryPending);
+  document.addEventListener("visibilitychange", function(){ if (!document.hidden) retryPending(); });
 
 })();
 </script>
